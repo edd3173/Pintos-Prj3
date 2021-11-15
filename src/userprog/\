@@ -1,0 +1,54 @@
+#include "userprog/syscall.h"
+#include <stdio.h>
+#include <syscall-nr.h>
+#include "threads/interrupt.h"
+#include "threads/thread.h"
+
+static void syscall_handler (struct intr_frame *);
+
+void
+syscall_init (void) 
+{
+  intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
+}
+
+int write(int fd, const void* buffer, unsigned size){
+	if(fd==1){
+		printf("Inside Write!\n");
+		printf("------------\n");
+		putbuf(buffer,size);
+		printf("\n------------\n");
+		
+		return size;
+	}
+	return -1;
+}
+
+static void
+syscall_handler (struct intr_frame *f UNUSED) 
+{
+  printf ("system call! : %d\n",*(uint32_t *)(f->esp));
+  hex_dump(f->esp,f->esp, 400, 1);
+  printf("esp+4 : %d\n",(int)*(uint32_t *)(f->esp+4));
+  printf("esp+8 : %x\n",*(uint32_t *)(f->esp+8));
+  printf("esp+12 : %x\n",(unsigned)*((uint32_t *)(f->esp+12)));
+  printf("esp+16 : %x\n",(unsigned)*((uint32_t *)(f->esp+16)));
+
+  switch(*(uint32_t*)(f->esp)){
+	case SYS_HALT:
+		break;
+	case SYS_EXIT:
+		break;
+	case SYS_EXEC:
+		break;
+	case SYS_WAIT:
+		break;
+	case SYS_READ:
+		break;
+    case SYS_WRITE:
+		f->eax=write((int)*(uint32_t *)(f->esp+4),(void*)*(uint32_t *)(f->esp+8),(unsigned)*((uint32_t *)(f->esp+12)));
+        break;
+  }
+
+  thread_exit ();
+}
